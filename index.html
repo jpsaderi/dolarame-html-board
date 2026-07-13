@@ -493,31 +493,46 @@
   // ── Layout builder ───────────────────────────────────────────────────
   function buildLayout() {
     document.getElementById('contentArea').innerHTML = `
-      <div class="card chart-card">
-        <div class="ch-title">Total gasto por dia</div>
-        <div class="ch-sub">Soma diária de todo o investimento (campanhas, conjuntos e criativos)</div>
-        <div class="chart-wrap tall"><canvas id="totalAggChart"></canvas></div>
-      </div>
-
       <div class="section-title"><span class="n">1</span> Campanhas</div>
-      <div class="card chart-card">
-        <div class="ch-title">Gasto por campanha</div>
-        <div class="ch-sub">Evolução diária de cada campanha</div>
-        <div class="chart-wrap"><canvas id="campMultiChart"></canvas></div>
+      <div class="charts-row">
+        <div class="card chart-card">
+          <div class="ch-title">Total gasto por dia — Campanhas</div>
+          <div class="ch-sub">Soma diária de todas as campanhas</div>
+          <div class="chart-wrap"><canvas id="campAggChart"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="ch-title">Gasto por campanha</div>
+          <div class="ch-sub">Evolução diária de cada campanha</div>
+          <div class="chart-wrap"><canvas id="campMultiChart"></canvas></div>
+        </div>
       </div>
 
       <div class="section-title"><span class="n">2</span> Conjuntos de anúncios</div>
-      <div class="card chart-card">
-        <div class="ch-title">Gasto por conjunto</div>
-        <div class="ch-sub">Evolução diária de cada conjunto de anúncios</div>
-        <div class="chart-wrap"><canvas id="adsetMultiChart"></canvas></div>
+      <div class="charts-row">
+        <div class="card chart-card">
+          <div class="ch-title">Total gasto por dia — Conjuntos</div>
+          <div class="ch-sub">Soma diária de todos os conjuntos</div>
+          <div class="chart-wrap"><canvas id="adsetAggChart"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="ch-title">Gasto por conjunto</div>
+          <div class="ch-sub">Evolução diária de cada conjunto de anúncios</div>
+          <div class="chart-wrap"><canvas id="adsetMultiChart"></canvas></div>
+        </div>
       </div>
 
       <div class="section-title"><span class="n">3</span> Criativos</div>
-      <div class="card chart-card">
-        <div class="ch-title">Gasto por criativo</div>
-        <div class="ch-sub">Evolução diária de cada criativo</div>
-        <div class="chart-wrap"><canvas id="adMultiChart"></canvas></div>
+      <div class="charts-row">
+        <div class="card chart-card">
+          <div class="ch-title">Total gasto por dia — Criativos</div>
+          <div class="ch-sub">Soma diária de todos os criativos</div>
+          <div class="chart-wrap"><canvas id="adAggChart"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="ch-title">Gasto por criativo</div>
+          <div class="ch-sub">Evolução diária de cada criativo</div>
+          <div class="chart-wrap"><canvas id="adMultiChart"></canvas></div>
+        </div>
       </div>
 
       <div class="section-title"><span class="n">4</span> Tendência de gastos</div>
