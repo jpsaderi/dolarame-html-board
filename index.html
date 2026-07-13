@@ -73,8 +73,8 @@
   .date-range-label { font-size: 12px; color: var(--muted); white-space: nowrap; margin-left: auto; }
   .date-range-label strong { color: var(--primary); font-weight: 700; }
 
-  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
-  @media (max-width: 1300px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+  @media (max-width: 1500px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
   .kpi { padding: 20px; }
   .kpi .l { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: #9a9891; font-weight: 700; }
@@ -190,6 +190,7 @@
       <div class="card kpi"><div class="l">Budget diário atual</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Média de orçamento por conjunto</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Projeção fim do mês</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
+      <div class="card kpi"><div class="l">Projeção fim do mês pelo orçamento</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
     </div>
 
     <div id="contentArea">
@@ -583,6 +584,11 @@
         <div class="v">${brlInt(trend.projected || 0)}</div>
         <div class="m">${trend.remainingDays != null ? `mais ${trend.remainingDays} dia${trend.remainingDays !== 1 ? 's' : ''} projetado${trend.remainingDays !== 1 ? 's' : ''}` : '—'}</div>
       </div>
+      <div class="card kpi">
+        <div class="l">Projeção fim do mês pelo orçamento</div>
+        <div class="v">${brlInt(trend.projectedByBudget || 0)}</div>
+        <div class="m">baseada no budget diário atual dos conjuntos</div>
+      </div>
     `;
 
     document.getElementById('trendBadges').innerHTML = `
@@ -660,6 +666,7 @@
       <div class="card kpi"><div class="l">Budget diário atual</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Média de orçamento por conjunto</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Projeção fim do mês</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
+      <div class="card kpi"><div class="l">Projeção fim do mês pelo orçamento</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
     `;
 
     try {
@@ -718,6 +725,7 @@
         <div class="card kpi"><div class="l">Budget diário atual</div><div class="v">—</div></div>
         <div class="card kpi"><div class="l">Média de orçamento por conjunto</div><div class="v">—</div></div>
         <div class="card kpi"><div class="l">Projeção fim do mês</div><div class="v">—</div></div>
+        <div class="card kpi"><div class="l">Projeção fim do mês pelo orçamento</div><div class="v">—</div></div>
       `;
       badge.textContent = 'Erro';
       badge.className = 'badge-status bs-err';
