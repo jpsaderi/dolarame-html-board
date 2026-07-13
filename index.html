@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dolarame · Gráficos de gastos</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #f7f6f2;
@@ -224,6 +223,42 @@
   }
   function fmtDateFull(iso) {
     return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' });
+  }
+
+  // ── Carregamento dinâmico do Chart.js (com fallback entre CDNs) ────
+  // Evita depender de uma tag <script> fixa no <head>, que algumas
+  // plataformas de publicação removem ou bloqueiam via CSP.
+  const CHART_CDN_URLS = [
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+    'https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js',
+  ];
+  let chartLoadPromise = null;
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Falha ao carregar ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  async function ensureChartLoaded() {
+    if (window.Chart) return;
+    if (chartLoadPromise) return chartLoadPromise;
+    chartLoadPromise = (async () => {
+      let lastErr = null;
+      for (const url of CHART_CDN_URLS) {
+        try {
+          await loadScriptOnce(url);
+          if (window.Chart) return;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      throw new Error('Não foi possível carregar a biblioteca de gráficos (Chart.js). Verifique se o domínio cdnjs.cloudflare.com / cdn.jsdelivr.net / unpkg.com não está bloqueado neste ambiente.' + (lastErr ? ' Detalhe: ' + lastErr.message : ''));
+    })();
+    return chartLoadPromise;
   }
 
   const chartInstances = {};
@@ -588,6 +623,8 @@
     `;
 
     try {
+      await ensureChartLoaded();
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -698,6 +735,8 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
+    ensureChartLoaded().catch(() => { /* falha será reportada ao clicar em Atualizar */ });
+
     document.getElementById('webhookUrl').value = STATIC_WEBHOOK_URL;
 
     const savedStart = localStorage.getItem('dolarame_graf_start_date');
