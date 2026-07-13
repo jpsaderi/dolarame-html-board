@@ -73,7 +73,8 @@
   .date-range-label { font-size: 12px; color: var(--muted); white-space: nowrap; margin-left: auto; }
   .date-range-label strong { color: var(--primary); font-weight: 700; }
 
-  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+  @media (max-width: 1300px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
   .kpi { padding: 20px; }
   .kpi .l { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: #9a9891; font-weight: 700; }
@@ -107,6 +108,7 @@
   .trend-pill strong { display: block; font-family: 'Syne', sans-serif; font-size: 16px; margin-top: 2px; }
   .trend-pill.proj strong { color: var(--warning); }
   .trend-pill.spent strong { color: var(--primary); }
+  .trend-pill.budget strong { color: #5b4b8a; }
 
   @media (max-width: 980px) {
     .dash { grid-template-columns: 1fr; }
@@ -185,7 +187,8 @@
     <div class="kpis" id="kpisArea">
       <div class="card kpi"><div class="l">Total gasto</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Média diária</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
-      <div class="card kpi"><div class="l">Maior gasto diário</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
+      <div class="card kpi"><div class="l">Budget diário atual</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
+      <div class="card kpi"><div class="l">Média de orçamento por conjunto</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Projeção fim do mês</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
     </div>
 
@@ -369,9 +372,9 @@
   }
 
   // ── Trend / projection chart ────────────────────────────────────────
-  function buildTrendChart(dates, values) {
+  function buildTrendChart(dates, values, dailyBudgetTotal) {
     destroyChart('trendChart');
-    if (dates.length === 0) return { total: 0, avg: 0, projected: 0 };
+    if (dates.length === 0) return { total: 0, avg: 0, projected: 0, projectedByBudget: 0 };
 
     const lastDate = new Date(dates[dates.length - 1] + 'T00:00:00');
     const year = lastDate.getFullYear();
@@ -391,17 +394,22 @@
     const remainingDays = Math.max(0, daysInMonth - lastDay);
     const projLabels = [];
     const projValues = [];
+    const projBudgetValues = [];
     let projRunning = running;
+    let projBudgetRunning = running;
     for (let d = 1; d <= remainingDays; d++) {
       const dt = new Date(year, month, lastDay + d);
       projLabels.push(dt.toISOString().slice(0, 10));
       projRunning += avg;
       projValues.push(projRunning);
+      projBudgetRunning += (dailyBudgetTotal || 0);
+      projBudgetValues.push(projBudgetRunning);
     }
 
     const allLabels = [...dates, ...projLabels];
     const actualSeries = [...cumulative, ...Array(projLabels.length).fill(null)];
     const projSeries = [...Array(dates.length - 1).fill(null), cumulative[cumulative.length - 1], ...projValues];
+    const projBudgetSeries = [...Array(dates.length - 1).fill(null), cumulative[cumulative.length - 1], ...projBudgetValues];
 
     const ctx = document.getElementById('trendChart').getContext('2d');
     chartInstances['trendChart'] = new Chart(ctx, {
@@ -422,10 +430,22 @@
             spanGaps: true,
           },
           {
-            label: 'Projeção até fim do mês',
+            label: 'Projeção pela média de gasto',
             data: projSeries,
             borderColor: '#a85600',
             borderDash: [6, 5],
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            tension: .25,
+            spanGaps: true,
+          },
+          {
+            label: 'Projeção pelo budget dos conjuntos',
+            data: projBudgetSeries,
+            borderColor: '#5b4b8a',
+            borderDash: [2, 4],
             backgroundColor: 'transparent',
             borderWidth: 2.5,
             pointRadius: 2,
@@ -459,7 +479,14 @@
       }
     });
 
-    return { total, avg, projected: projValues.length ? projValues[projValues.length - 1] : running, daysInMonth, remainingDays };
+    return {
+      total,
+      avg,
+      projected: projValues.length ? projValues[projValues.length - 1] : running,
+      projectedByBudget: projBudgetValues.length ? projBudgetValues[projBudgetValues.length - 1] : running,
+      daysInMonth,
+      remainingDays
+    };
   }
 
   // ── Layout builder ───────────────────────────────────────────────────
@@ -512,22 +539,23 @@
         <div class="trend-top">
           <div>
             <div class="ch-title">Projeção de gasto acumulado até o fim do mês</div>
-            <div class="ch-sub">Baseada na média diária do período selecionado</div>
+            <div class="ch-sub">Duas projeções: pela média diária de gasto e pelo budget diário atual dos conjuntos</div>
           </div>
           <div class="trend-badges" id="trendBadges"></div>
         </div>
         <div class="chart-wrap tall"><canvas id="trendChart"></canvas></div>
-        <div class="legend-note">Linha sólida: gasto real acumulado &nbsp;·&nbsp; Linha tracejada: projeção pela média diária</div>
+        <div class="legend-note">Linha sólida: gasto real acumulado &nbsp;·&nbsp; Tracejado laranja: projeção pela média de gasto &nbsp;·&nbsp; Tracejado roxo: projeção pelo budget dos conjuntos</div>
       </div>
     `;
   }
 
   // ── KPIs ─────────────────────────────────────────────────────────────
-  function renderKPIs(dates, values, trend) {
+  function renderKPIs(dates, values, trend, budgetInfo) {
     const total = values.reduce((s, v) => s + v, 0);
     const avg = values.length ? total / values.length : 0;
-    let maxDay = { date: null, val: 0 };
-    dates.forEach((d, i) => { if (values[i] > maxDay.val) maxDay = { date: d, val: values[i] }; });
+    const dailyBudgetTotal = budgetInfo.dailyBudgetTotal || 0;
+    const avgBudgetPerAdset = budgetInfo.avgBudgetPerAdset || 0;
+    const adsetCount = budgetInfo.count || 0;
 
     document.getElementById('kpisArea').innerHTML = `
       <div class="card kpi">
@@ -541,9 +569,14 @@
         <div class="m">por dia no período selecionado</div>
       </div>
       <div class="card kpi">
-        <div class="l">Maior gasto diário</div>
-        <div class="v">${brlInt(maxDay.val)}</div>
-        <div class="m">${maxDay.date ? fmtDateShort(maxDay.date) : '—'}</div>
+        <div class="l">Budget diário atual</div>
+        <div class="v">${brlInt(dailyBudgetTotal)}</div>
+        <div class="m">somado entre ${adsetCount} conjunto${adsetCount !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="card kpi">
+        <div class="l">Média de orçamento por conjunto</div>
+        <div class="v">${brl(avgBudgetPerAdset)}</div>
+        <div class="m">budget diário por conjunto</div>
       </div>
       <div class="card kpi">
         <div class="l">Projeção fim do mês</div>
@@ -554,7 +587,8 @@
 
     document.getElementById('trendBadges').innerHTML = `
       <div class="trend-pill spent">Gasto real<strong>${brlInt(total)}</strong></div>
-      <div class="trend-pill proj">Projeção total do mês<strong>${brlInt(trend.projected || 0)}</strong></div>
+      <div class="trend-pill proj">Projeção pela média<strong>${brlInt(trend.projected || 0)}</strong></div>
+      <div class="trend-pill budget">Projeção pelo budget<strong>${brlInt(trend.projectedByBudget || 0)}</strong></div>
     `;
   }
 
@@ -589,9 +623,14 @@
     buildMultiSeriesChart('adsetMultiChart', adSets, 'name');
     buildMultiSeriesChart('adMultiChart', ads, 'name');
 
-    // Trend uses the overall aggregate (campaigns total ≈ total investido)
-    const trend = buildTrendChart(aggDates, campAggVals);
-    renderKPIs(aggDates, campAggVals, trend);
+    // Budget atual dos conjuntos (soma e média do campo "budget" de cada adset)
+    const dailyBudgetTotal = adSets.reduce((s, a) => s + (Number(a.budget) || 0), 0);
+    const avgBudgetPerAdset = adSets.length ? dailyBudgetTotal / adSets.length : 0;
+    const budgetInfo = { dailyBudgetTotal, avgBudgetPerAdset, count: adSets.length };
+
+    // Trend uses the overall aggregate (campaigns total ≈ total investido) + budget dos conjuntos
+    const trend = buildTrendChart(aggDates, campAggVals, dailyBudgetTotal);
+    renderKPIs(aggDates, campAggVals, trend, budgetInfo);
   }
 
   // ── Fetch principal ───────────────────────────────────────────────────
@@ -618,7 +657,8 @@
     document.getElementById('kpisArea').innerHTML = `
       <div class="card kpi"><div class="l">Total gasto</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Média diária</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
-      <div class="card kpi"><div class="l">Maior gasto diário</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
+      <div class="card kpi"><div class="l">Budget diário atual</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
+      <div class="card kpi"><div class="l">Média de orçamento por conjunto</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
       <div class="card kpi"><div class="l">Projeção fim do mês</div><div class="skel skel-v"></div><div class="skel skel-m"></div></div>
     `;
 
@@ -675,7 +715,8 @@
       document.getElementById('kpisArea').innerHTML = `
         <div class="card kpi"><div class="l">Total gasto</div><div class="v">—</div></div>
         <div class="card kpi"><div class="l">Média diária</div><div class="v">—</div></div>
-        <div class="card kpi"><div class="l">Maior gasto diário</div><div class="v">—</div></div>
+        <div class="card kpi"><div class="l">Budget diário atual</div><div class="v">—</div></div>
+        <div class="card kpi"><div class="l">Média de orçamento por conjunto</div><div class="v">—</div></div>
         <div class="card kpi"><div class="l">Projeção fim do mês</div><div class="v">—</div></div>
       `;
       badge.textContent = 'Erro';
