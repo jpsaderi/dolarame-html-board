@@ -497,7 +497,7 @@
         <div class="card chart-card">
           <div class="ch-title">Total gasto por dia</div>
           <div class="ch-sub">Soma diária de todas as campanhas</div>
-          <div class="chart-wrap"><canvas id="campAggChart"></canvas></div>
+          <div class="chart-wrap"><canvas id="totalAggChart"></canvas></div>
         </div>
       </div>
       <div class="section-title"><span class="n">1</span> Campanhas</div>
@@ -613,9 +613,7 @@
       return f ? Number(f.adsTotalSpent) || 0 : 0;
     });
 
-    buildAggregateChart('campAggChart', aggDates, campAggVals, '#01696f', 'Campanhas');
-    buildAggregateChart('adsetAggChart', aggDates, adsetAggVals, '#437a22', 'Conjuntos');
-    buildAggregateChart('adAggChart', aggDates, adAggVals, '#a85600', 'Criativos');
+    buildAggregateChart('totalAggChart', aggDates, campAggVals, '#01696f', 'Campanhas');
 
     buildMultiSeriesChart('campMultiChart', campaigns, 'name');
     buildMultiSeriesChart('adsetMultiChart', adSets, 'name');
